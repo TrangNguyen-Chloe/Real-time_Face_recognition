@@ -8,18 +8,24 @@ from tensorflow.keras.applications.xception import Xception, preprocess_input
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import ImageDataGenerator, load_img, img_to_array
 
-#load model
+#load detection model
 MODEL_d = 'D:\Facedetection\yolo\yolov3-face.cfg'
 WEIGHT = 'D:\Facedetection\yolo\yolov3-wider_16000.weights'
 
 net = cv2.dnn.readNetFromDarknet(MODEL_d, WEIGHT)
 net.setPreferableBackend(cv2.dnn.DNN_BACKEND_OPENCV)
 net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
+
 #prediction model
 MODEL_p = load_model('FaceRecognition_model1.h5')
-index_to_label = {0: 'Albert', 1: 'Chinh', 2: 'Chloe', 3: 'Ly', 4: 'Viet'}
-# #defind j var for image capture counter 
-# j=1
+
+#data folder path
+data_dir = 'D:\Facedetection\data'
+name_list = os.listdir(data_dir)
+name_list.sort()
+labels = {i:name_list[i] for i in range(len(name_list))}
+# index_to_label = {0: 'Albert', 1: 'Chinh', 2: 'Chloe', 3: 'Ly', 4: 'Viet'}
+
 
 cap = cv2.VideoCapture(0)
 #webcam check
@@ -31,8 +37,8 @@ while True:
     ret, frame = cap.read()
 #detect face with yolo
     #get detection
+    
     IMG_WIDTH, IMG_HEIGHT = 416, 416
-
     # Making blob object from original image
     blob = cv2.dnn.blobFromImage(frame, 1/255, (IMG_WIDTH, IMG_HEIGHT),
                                 [0, 0, 0], 1, crop=False)
@@ -102,7 +108,7 @@ while True:
         face_frame = preprocess_input(face_frame)
         prediction = MODEL_p.predict(face_frame, batch_size = 10)
         label = np.argmax(prediction, axis = 1)
-        name = index_to_label[label[0]]
+        name = labels[int(label)]
         prop = round(max(prediction[0])*100)
 
         text = f'{name}, {prop}%'
@@ -121,12 +127,11 @@ while True:
     #Break when pressing ESC and capture when press space
     if c == 27:
         break
-    # elif c == 32:
-    #     img_name = f'F{j}.jpg'
-    #     crop = result[top:top+height, left:left+width] 
-    #     img_path = os.path.join('D:\Facedetection\data\Chloe',img_name)
-    #     cv2.imwrite(img_path, crop)
-    #     j += 1
+    elif c == 32:
+        img_name = f'F{j}.jpg'
+        crop = result[top:top+height, left:left+width] 
+        img_path = os.path.join('D:\Facedetection\data\Chloe',img_name)
+        cv2.imwrite(img_path, crop)
 
 cap.release()
 cv2.destroyAllWindows()
